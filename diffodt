@@ -1,0 +1,104 @@
+#!/bin/bash
+# Skript:       diffodt
+# Zweck:        Zeigt die Unterschiede zweier OpenOffice.odt-Dateien an.
+#               Verwendet odt2txt, diff und (optional) kdiff3
+
+
+# Globale Variablen
+SCRIPTNAME=$(basename $0 .sh)
+
+EXIT_SUCCESS=0
+EXIT_FAILURE=1
+EXIT_ERROR=2
+EXIT_BUG=10
+
+# Variablen für Optionsschalter hier mit Default-Werten vorbelegen
+VERBOSE=n
+KDIFF3=n
+DIFFUSE=n
+DIFF=n
+STDDIFF=y
+
+# Funktionen
+function usage {
+        echo "Usage: $SCRIPTNAME [-h] [-v] [-d] [-k] [-u] Basisdatei.odt ModifizierteDatei.odt" >&2
+        echo
+        echo "$SCRIPTNAME zeigt die inhaltlichen Unterschiede zweier OpenDocumentText"
+        echo "Dateien (Endung .odt) an."
+        echo "Es wird entweder diff (Standard) oder kdiff3 verwendet."
+        echo "Ersteres gibt die Unterschiede auf die Konsole aus,"
+        echo "letzteres startet einen graphischen diff-Editor."
+        echo
+        echo "$SCRIPTNAME -d file1.odt file2.odt    verwendet diff   (Konsole)"
+        echo "$SCRIPTNAME -k file1.odt file2.odt    verwendet kdiff3 (Editor)"
+        echo "$SCRIPTNAME -u file1.odt file2.odt    verwendet diffuse (Editor)"
+        [[ $# -eq 1 ]] && exit $1 || exit $EXIT_FAILURE
+}
+
+# Die Option -h für Hilfe sollte immer vorhanden sein, die Optionen
+# -v und -o sind als Beispiele gedacht. -o hat ein Optionsargument;
+# man beachte das auf "o" folgende ":".
+while getopts ':dkuvh' OPTION ; do
+        case $OPTION in
+        v)        VERBOSE=y
+                ;;
+        k)        KDIFF3=y
+                  STDDIFF=n
+                ;;
+        u)        DIFFUSE=y
+                  STDDIFF=n
+                ;;
+        d)        DIFF=y
+                  STDDIFF=n
+                ;;
+        h)        usage $EXIT_SUCCESS
+                ;;
+        \?)        echo "Unbekannte Option \"-$OPTARG\"." >&2
+                usage $EXIT_ERROR
+                ;;
+        :)        echo "Option \"-$OPTARG\" benötigt ein Argument." >&2
+                usage $EXIT_ERROR
+                ;;
+        *)        echo "Dies kann eigentlich gar nicht passiert sein..."
+>&2
+                usage $EXIT_BUG
+                ;;
+        esac
+done
+# Verbrauchte Argumente überspringen
+shift $(( OPTIND - 1 ))
+
+# Eventuelle Tests auf min./max. Anzahl Argumente hier
+if (( $# != 2 )) ; then
+        echo "Genau ZWEI Dateinamen beim Aufruf übergeben." >&2
+        usage $EXIT_ERROR
+fi
+
+# Schleife über alle Argumente
+# Wandelt die beiden odt in txt um.
+i=1
+for ARG ; do
+        if [[ $VERBOSE = y ]] ; then
+                echo -n "OpenOffice Datei: "
+                echo $ARG
+        fi
+
+        odt2txt $ARG > /tmp/temp$$DIFFODT$i
+        let i=i+1
+done
+
+if [[ $DIFF = y || $STDDIFF = y ]] ; then
+                diff /tmp/temp$$DIFFODT1 /tmp/temp$$DIFFODT2
+fi
+
+if [[ $KDIFF3 = y ]] ; then
+                kdiff3 --L1 Basisdatei --L2 ModifizierteDatei /tmp/temp$$DIFFODT1 /tmp/temp$$DIFFODT2
+fi
+
+if [[ $DIFFUSE = y ]] ; then
+                diffuse /tmp/temp$$DIFFODT1 /tmp/temp$$DIFFODT2
+fi
+
+rm /tmp/temp$$DIFFODT1
+rm /tmp/temp$$DIFFODT2
+exit $EXIT_SUCCESS

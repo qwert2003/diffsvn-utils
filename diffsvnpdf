@@ -1,0 +1,173 @@
+#!/bin/bash
+# Skript:       diffsvn
+# Zweck:        Zeigt die Unterschiede zwischen ursprünglicher und veränderter Datei an, welche durch svn verwaltet wird.
+#               Verwendet diff, diffodt und (optional) kdiff3
+
+
+# Globale Variablen
+SCRIPTNAME=$(basename $0 .sh)
+
+EXIT_SUCCESS=0
+EXIT_FAILURE=1
+EXIT_ERROR=2
+EXIT_BUG=10
+
+# Variablen für Optionsschalter hier mit Default-Werten vorbelegen
+VERBOSE=n
+KDIFF3=n
+DIFFUSE=n
+DIFF=n
+ODT=n
+STDDIFF=y
+
+# Funktionen
+function usage {
+        echo "Usage: $SCRIPTNAME [-h] [-v] [-d] [-k] [-u] [-o] [-p] Datei_aus_svn_Arbeitsverzeichnis" >&2
+        echo
+        echo "$SCRIPTNAME zeigt die inhaltlichen Unterschiede zwischen Originaldatei"
+        echo "und veränderter Datei aus einem svn-Arbeitsverzeichnis an."
+        echo "Es wird entweder diff (Standard) oder kdiff3 verwendet."
+        echo "Ersteres gibt die Unterschiede auf die Konsole aus,"
+        echo "letzteres startet einen graphischen diff-Editor."
+        echo "Option -o vergleicht OpenOffice Writer Dateien."
+        echo "Option -p vergleicht pdf-Dateien."
+        echo
+        echo "$SCRIPTNAME -d datei.txt    verwendet diff   (Konsole)"
+        echo "$SCRIPTNAME -k datei.txt    verwendet kdiff3 (Editor)"
+        echo "$SCRIPTNAME -u datei.txt    verwendet diffuse (Editor)"
+        [[ $# -eq 1 ]] && exit $1 || exit $EXIT_FAILURE
+}
+
+# Die Option -h für Hilfe sollte immer vorhanden sein, die Optionen
+# -v und -o sind als Beispiele gedacht. -o hat ein Optionsargument;
+# man beachte das auf "o" folgende ":".
+while getopts ':dkuopPvh' OPTION ; do
+        case $OPTION in
+        v)        VERBOSE=y
+                ;;
+        k)        KDIFF3=y
+                  STDDIFF=n
+                ;;
+        u)        DIFFUSE=y
+                  STDDIFF=n
+                ;;
+        d)        DIFF=y
+                  STDDIFF=n
+                ;;
+	o)	  ODT=y
+		;;
+	p)	  PDF=y
+		;;
+	P)	  DIFFPDF=y
+		  PDF=y
+		;;
+        h)        usage $EXIT_SUCCESS
+                ;;
+        \?)        echo "Unbekannte Option \"-$OPTARG\"." >&2
+                usage $EXIT_ERROR
+                ;;
+        :)        echo "Option \"-$OPTARG\" benötigt ein Argument." >&2
+                usage $EXIT_ERROR
+                ;;
+        *)        echo "Dies kann eigentlich gar nicht passiert sein..."
+>&2
+                usage $EXIT_BUG
+                ;;
+        esac
+done
+# Verbrauchte Argumente überspringen
+shift $(( OPTIND - 1 ))
+
+# Eventuelle Tests auf min./max. Anzahl Argumente hier
+if (( $# != 1 )) ; then
+        echo "Genau EIN Dateinamen beim Aufruf übergeben." >&2
+        usage $EXIT_ERROR
+fi
+
+# Schleife über alle Argumente
+# 
+i=1
+for ARG ; do
+        if [[ $VERBOSE = y ]] ; then
+                echo -n "Datei: "
+                echo $ARG
+        fi
+
+        DATEI=$ARG
+
+        let i=i+1
+ done
+
+if [[ $PDF = y ]] ;
+	then
+	ORIGINALDATEI="/tmp/temp$$DIFFSVN.pdf"
+else
+        ORIGINALDATEI="/tmp/temp$$DIFFSVN"
+fi
+
+svn cat -r 'BASE' $DATEI > $ORIGINALDATEI
+# ORIGINALDATEI=$(dirname $DATEI)"/.svn/text-base/"$(basename $DATEI)".svn-base"
+
+# Testen ob die Dateien existieren
+if ! [ -r $DATEI ]
+	then 
+	echo "Datei kann nicht gelesen werden: " $DATEI
+	exit $EXIT_ERROR
+fi
+if ! [ -r $ORIGINALDATEI ]
+	then 
+	echo "Datei kann nicht gelesen werden: " $ORIGINALDATEI
+	echo "Ist dies ein svn-Arbeitsverzeichnis?"
+	exit $EXIT_ERROR
+fi
+
+
+if [[ $DIFF = y || $STDDIFF = y ]] ; then
+	if [[ $ODT = y ]] ;
+		then
+		diffodt -d $ORIGINALDATEI $DATEI
+	elif [[ $PDF = y ]] ;
+		then
+		diffpdftext -d $ORIGINALDATEI $DATEI
+	else
+                diff $ORIGINALDATEI $DATEI
+	fi
+fi
+
+if [[ $KDIFF3 = y ]] ; then
+	if [[ $ODT = y ]] ;
+		then
+		diffodt -k $ORIGINALDATEI $DATEI
+	elif [[ $PDF = y ]] ;
+		then
+		diffpdftext -k $ORIGINALDATEI $DATEI
+	else
+                kdiff3 --L1 "Ursprungsdatei" --L2 "Aktuelle Datei" $ORIGINALDATEI $DATEI
+	fi
+fi
+
+if [[ $DIFFUSE = y ]] ; then
+	if [[ $ODT = y ]] ;
+		then
+		diffodt -u $ORIGINALDATEI $DATEI
+	elif [[ $PDF = y ]] ;
+		then
+		diffpdftext -u $ORIGINALDATEI $DATEI
+	else
+                diffuse $ORIGINALDATEI $DATEI
+	fi
+fi
+
+
+if [[ $DIFFPDF = y ]] ; then
+	if [[ $PDF = y ]] ;
+		then
+		diffpdf -a $ORIGINALDATEI $DATEI
+	else
+                diff $ORIGINALDATEI $DATEI
+	fi
+fi
+
+
+rm $ORIGINALDATEI
+exit $EXIT_SUCCESS
