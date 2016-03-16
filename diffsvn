@@ -18,12 +18,13 @@ KDIFF3=n
 DIFFUSE=n
 DIFF=n
 VBINDIFF=n
+ZIPDIFF=n
 ODT=n
 STDDIFF=y
 
 # Funktionen
 function usage {
-        echo "Usage: $SCRIPTNAME [-h] [-v] [-d] [-k] [-u] [-b] [-o] [-p] [-P] Datei_aus_svn_Arbeitsverzeichnis" >&2
+        echo "Usage: $SCRIPTNAME [-h] [-v] [-d] [-k] [-u] [-b] [-o] [-p] [-P] [z] Datei_aus_svn_Arbeitsverzeichnis" >&2
         echo
         echo "$SCRIPTNAME zeigt die inhaltlichen Unterschiede zwischen Originaldatei"
         echo "und veränderter Datei aus einem svn-Arbeitsverzeichnis an."
@@ -37,13 +38,14 @@ function usage {
         echo "$SCRIPTNAME -k datei.txt    verwendet kdiff3 (Editor)"
         echo "$SCRIPTNAME -u datei.txt    verwendet diffuse (Editor)"
         echo "$SCRIPTNAME -b datei.png    verwendet vbindiff (Konsole)"
+        echo "$SCRIPTNAME -z datei.zip    verwendet zipdiff (Konsole)"
         [[ $# -eq 1 ]] && exit $1 || exit $EXIT_FAILURE
 }
 
 # Die Option -h für Hilfe sollte immer vorhanden sein, die Optionen
 # -v und -o sind als Beispiele gedacht. -o hat ein Optionsargument;
 # man beachte das auf "o" folgende ":".
-while getopts ':dkubopPvh' OPTION ; do
+while getopts ':dkubzopPvh' OPTION ; do
         case $OPTION in
         v)        VERBOSE=y
                 ;;
@@ -54,6 +56,9 @@ while getopts ':dkubopPvh' OPTION ; do
                   STDDIFF=n
                 ;;
         b)        VBINDIFF=y
+                  STDDIFF=n
+                ;;
+        z)        ZIPDIFF=y
                   STDDIFF=n
                 ;;
         d)        DIFF=y
@@ -165,6 +170,10 @@ fi
 
 if [[ $VBINDIFF = y ]] ; then
 	vbindiff $ORIGINALDATEI $DATEI
+fi
+
+if [[ $ZIPDIFF = y ]] ; then
+	zipdiff $ORIGINALDATEI $DATEI
 fi
 
 if [[ $DIFFPDF = y ]] ; then
