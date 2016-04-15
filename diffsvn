@@ -103,7 +103,7 @@ for ARG ; do
                 echo $ARG
         fi
 
-        DATEI=$ARG
+        DATEI="$ARG"
 
         let i=i+1
  done
@@ -115,11 +115,11 @@ else
         ORIGINALDATEI="/tmp/temp$$DIFFSVN"
 fi
 
-svn cat -r 'BASE' $DATEI > $ORIGINALDATEI
+svn cat -r 'BASE' "$DATEI" > $ORIGINALDATEI
 # ORIGINALDATEI=$(dirname $DATEI)"/.svn/text-base/"$(basename $DATEI)".svn-base"
 
 # Testen ob die Dateien existieren
-if ! [ -r $DATEI ]
+if ! [ -r "$DATEI" ]
 	then 
 	echo "Datei kann nicht gelesen werden: " $DATEI
 	exit $EXIT_ERROR
@@ -135,53 +135,53 @@ fi
 if [[ $DIFF = y || $STDDIFF = y ]] ; then
 	if [[ $ODT = y ]] ;
 		then
-		diffodt -d $ORIGINALDATEI $DATEI
+		diffodt -d $ORIGINALDATEI "$DATEI"
 	elif [[ $PDF = y ]] ;
 		then
-		diffpdftext -d $ORIGINALDATEI $DATEI
+		diffpdftext -d $ORIGINALDATEI "$DATEI"
 	else
-                diff $ORIGINALDATEI $DATEI
+                diff $ORIGINALDATEI "$DATEI"
 	fi
 fi
 
 if [[ $KDIFF3 = y ]] ; then
 	if [[ $ODT = y ]] ;
 		then
-		diffodt -k $ORIGINALDATEI $DATEI
+		diffodt -k $ORIGINALDATEI "$DATEI"
 	elif [[ $PDF = y ]] ;
 		then
-		diffpdftext -k $ORIGINALDATEI $DATEI
+		diffpdftext -k $ORIGINALDATEI "$DATEI"
 	else
-                kdiff3 --L1 "Ursprungsdatei" --L2 "Aktuelle Datei" $ORIGINALDATEI $DATEI
+                kdiff3 --L1 "Ursprungsdatei" --L2 "Aktuelle Datei" $ORIGINALDATEI "$DATEI"
 	fi
 fi
 
 if [[ $DIFFUSE = y ]] ; then
 	if [[ $ODT = y ]] ;
 		then
-		diffodt -u $ORIGINALDATEI $DATEI
+		diffodt -u $ORIGINALDATEI "$DATEI"
 	elif [[ $PDF = y ]] ;
 		then
-		diffpdftext -u $ORIGINALDATEI $DATEI
+		diffpdftext -u $ORIGINALDATEI "$DATEI"
 	else
-                diffuse $ORIGINALDATEI $DATEI
+                diffuse $ORIGINALDATEI "$DATEI"
 	fi
 fi
 
 if [[ $VBINDIFF = y ]] ; then
-	vbindiff $ORIGINALDATEI $DATEI
+	vbindiff $ORIGINALDATEI "$DATEI"
 fi
 
 if [[ $ZIPDIFF = y ]] ; then
-	zipdiff $ORIGINALDATEI $DATEI
+	zipdiff $ORIGINALDATEI "$DATEI"
 fi
 
 if [[ $DIFFPDF = y ]] ; then
 	if [[ $PDF = y ]] ;
 		then
-		diffpdf -a $ORIGINALDATEI $DATEI
+		diffpdf -a $ORIGINALDATEI "$DATEI"
 	else
-                diff $ORIGINALDATEI $DATEI
+                diff $ORIGINALDATEI "$DATEI"
 	fi
 fi
 
